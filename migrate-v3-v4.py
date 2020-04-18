@@ -4,7 +4,6 @@ import os
 import sys
 import time
 import json
-import configparser
 from json import JSONDecodeError
 
 # Click library (command line arguments)
@@ -159,6 +158,7 @@ def cli(**kwargs):
     # All good, let's convert user files and get a dict of groups
     user_count = 0
     groups = {}
+    user_name = None
     for file in files:
         src_path = os.path.join(users_dir, file)
         if os.path.isdir(src_path):
@@ -177,6 +177,8 @@ def cli(**kwargs):
             msg.send_message('Key: [{}:{}]'.format(key, value), msg.DEBUG)
 
             # The type of user manager used
+            if key == '_username':
+                user_name = value
             if key == '@type':
                 if value in class_replacements:
                     json_data[key] = class_replacements[value]
@@ -279,6 +281,9 @@ def cli(**kwargs):
                                  '[Found:{},Expected:{}]'.format(len(group_data), len(group_attrs)))
                 sys.exit(1)
 
+            # Add the group admin user
+            group_data['admin'] = user_name
+
             # Save group attributes
             groups[prim_group] = group_data
 
@@ -303,11 +308,16 @@ def cli(**kwargs):
         msg.send_message('We would have written [{}] with content:\n{}'.format(group_output_file,
                                                                                json.dumps(groups, indent=2)))
     else:
-        cp = configparser.ConfigParser()
+        output = ""
+        i = 1
         for group in groups:
-            cp[group] = groups[group]
+            output += "group{}={}{}".format(i, group, os.linesep)
+            for groupkey in groups[group]:
+                output += "group{}.{}={}{}".format(i, groupkey, groups[group][groupkey], os.linesep)
+
+            i += 1
         with open(group_output_file, 'w') as wfile:
-            cp.write(wfile)
+            wfile.write(output)
         msg.send_message('We have written [{}] file'.format(group_output_file))
         msg.send_message('Use this file as input for the java Upgrade tool to create the missing groups')
 
