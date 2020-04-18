@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import json
+import configparser
 from json import JSONDecodeError
 
 # Click library (command line arguments)
@@ -79,7 +80,7 @@ class Messages:
               help='The drftpd v3 json userdata base dir', show_default=True)
 @click.option('--exec', '-e', required=False, default=False, is_flag=True,
               help='Actually execute space actions', show_default=True)
-@click.option('--group-output-file', '-g', required=False, default='groups.json',
+@click.option('--group-output-file', '-g', required=False, default='groups.properties',
               help='This file contain the input for creating all missing groups for v4', show_default=True)
 def cli(**kwargs):
     debug = kwargs['debug']
@@ -302,9 +303,13 @@ def cli(**kwargs):
         msg.send_message('We would have written [{}] with content:\n{}'.format(group_output_file,
                                                                                json.dumps(groups, indent=2)))
     else:
+        cp = configparser.ConfigParser()
+        for group in groups:
+            cp[group] = groups[group]
         with open(group_output_file, 'w') as wfile:
-            wfile.write(json.dumps(groups, ident=2))
-        msg.send_message('We have written [{}] file', group_output_file)
+            cp.write(wfile)
+        msg.send_message('We have written [{}] file'.format(group_output_file))
+        msg.send_message('Use this file as input for the java Upgrade tool to create the missing groups')
 
 
 # Start the program
