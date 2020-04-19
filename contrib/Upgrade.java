@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.drftpd.master.usermanager.encryptedjavabeans.EncryptedBeanUserManager;
-import org.drftpd.master.usermanager.Group;
+import org.drftpd.master.usermanager.javabeans.BeanGroup;
+import org.drftpd.master.vfs.CommitManager;
 
 /**
  * @author Mikevg
@@ -53,7 +54,7 @@ public class Upgrade {
         while(props.getProperty("group"+i) != null) {
             String group = props.getProperty("group"+i);
             System.out.println("Creating group [" + group + "]");
-            Group g = bu.createGroup(group);
+            BeanGroup g = (BeanGroup)bu.createGroup(group);
             if(props.getProperty("group"+i+".admin") != null) {
                 g.addAdmin(bu.getUserByNameIncludeDeleted(props.getProperty("group"+i+".admin")));
             }
@@ -69,7 +70,7 @@ public class Upgrade {
             if(props.getProperty("group"+i+".maxratio") != null) {
                 g.setMaxRatio(Float.parseFloat(props.getProperty("group"+i+".maxratio")));
             }
-            g.commit();
+            g.writeToDisk();
             i += 1;
         }
     }
