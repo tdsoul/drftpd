@@ -20,3 +20,6 @@ Also produces a groups.properties file to be run against a java tool (WIP)
 * Download file to your base dir (where userdata exists)
 * run in dry-run mode: python3 migrate-v3-v4.py (resolve any missing libraries)
 * run in execute mode: python3 migrate-v3-v4.py -e
+* Make executable: chmod 755 *.sh
+* compile java: ./compile.sh
+* Create groups: ./run.sh
