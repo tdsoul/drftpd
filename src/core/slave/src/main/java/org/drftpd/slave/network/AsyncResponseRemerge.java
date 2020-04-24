@@ -36,8 +36,7 @@ public class AsyncResponseRemerge extends AsyncResponse {
 
     private final long _lastModified;
 
-    public AsyncResponseRemerge(String directoryPath,
-                                List<LightRemoteInode> inodes, long lastModified) {
+    public AsyncResponseRemerge(String directoryPath, List<LightRemoteInode> inodes, long lastModified) {
         super("Remerge");
         if (File.separatorChar == '\\') { // stupid win32 hack
             directoryPath = directoryPath.replaceAll("\\\\", "/");

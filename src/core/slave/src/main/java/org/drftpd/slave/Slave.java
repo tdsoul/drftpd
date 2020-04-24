@@ -114,22 +114,40 @@ public class Slave {
     protected Slave() {
     }
 
-    public Slave(Properties p) throws IOException, SSLUnavailableException {
+    public void connect(Properties p) throws IOException, SSLUnavailableException {
+        String slavename = PropertyHelper.getProperty(p, "slave.name");
         InetSocketAddress addr = new InetSocketAddress(PropertyHelper.getProperty(p, "master.host"),
                 Integer.parseInt(PropertyHelper.getProperty(p, "master.bindport")));
-
-        // Whatever interface the slave uses to connect to the master, is the
-        // interface that the master will report to clients requesting PASV
-        // transfers from this slave, unless pasv_addr is set on the master for this
-        // slave
         logger.info("Connecting to master at {}", addr);
+        _socket.setSoTimeout(socketTimeout);
+        _socket.connect(addr);
+        if (_socket instanceof SSLSocket) {
+            if (getCipherSuites() != null) {
+                ((SSLSocket) _socket).setEnabledCipherSuites(getCipherSuites());
+            }
+            if (getSSLProtocols() != null) {
+                ((SSLSocket) _socket).setEnabledProtocols(getSSLProtocols());
+            }
+            ((SSLSocket) _socket).setUseClientMode(true);
 
-        String slavename = PropertyHelper.getProperty(p, "slave.name");
+            try {
+                ((SSLSocket) _socket).startHandshake();
+            } catch (SSLHandshakeException e) {
+                throw new SSLUnavailableException("Handshake failure, maybe master isn't SSL ready or SSL is disabled.", e);
+            }
+        }
+        _sout = new ObjectOutputStream(new BufferedOutputStream(_socket.getOutputStream()));
+        _sout.flush();
+        _sin = new ObjectInputStream(new BufferedInputStream(_socket.getInputStream()));
+        _sout.writeObject(slavename);
+        _sout.flush();
+        _sout.reset();
+    }
 
+    public Slave(Properties p, boolean disconnected) throws IOException, SSLUnavailableException {
         if (isWin32) {
             _renameQueue = Collections.newSetFromMap(new ConcurrentHashMap<>());
         }
-
         try {
             _ctx = SSLGetContext.getSSLContext();
         } catch (Exception e) {
@@ -234,33 +252,8 @@ public class Slave {
         } catch (NullPointerException e) {
             _timeout = actualTimeout;
         }
-        _socket.setSoTimeout(socketTimeout);
-        _socket.connect(addr);
-        if (_socket instanceof SSLSocket) {
-            if (getCipherSuites() != null) {
-                ((SSLSocket) _socket).setEnabledCipherSuites(getCipherSuites());
-            }
-            if (getSSLProtocols() != null) {
-                ((SSLSocket) _socket).setEnabledProtocols(getSSLProtocols());
-            }
-            ((SSLSocket) _socket).setUseClientMode(true);
-
-            try {
-                ((SSLSocket) _socket).startHandshake();
-            } catch (SSLHandshakeException e) {
-                throw new SSLUnavailableException("Handshake failure, maybe master isn't SSL ready or SSL is disabled.",
-                        e);
-            }
-        }
-        _sout = new ObjectOutputStream(new BufferedOutputStream(_socket.getOutputStream()));
-        _sout.flush();
-        _sin = new ObjectInputStream(new BufferedInputStream(_socket.getInputStream()));
 
         _central = new SlaveProtocolCentral(this);
-
-        _sout.writeObject(slavename);
-        _sout.flush();
-        _sout.reset();
 
         _uploadChecksums = p.getProperty("enableuploadchecksums", "true").equals("true");
         _downloadChecksums = p.getProperty("enabledownloadchecksums", "true").equals("true");
@@ -282,6 +275,16 @@ public class Slave {
 
         _ignorePartialRemerge = p.getProperty("ignore.partialremerge", "false").equalsIgnoreCase("true");
         _threadedRemerge = p.getProperty("threadedremerge", "false").equalsIgnoreCase("true");
+
+        if(disconnected) {
+            _online = true;
+        } else {
+            connect(p);
+        }
+    }
+
+    public Slave(Properties p) throws IOException, SSLUnavailableException {
+        this(p, false);
     }
 
     public static void main(String... args) throws Exception {
@@ -319,8 +322,7 @@ public class Slave {
             Class<?> aClass = Class.forName(desiredDs);
             _diskSelection = (DiskSelectionInterface) aClass.getConstructor(Slave.class).newInstance(this);
         } catch (Exception e) {
-            throw new RuntimeException(
-                    "Cannot create instance of diskselection, check 'diskselection' in the configuration file", e);
+            throw new RuntimeException("Cannot create instance of diskselection, check 'diskselection' in the configuration file", e);
         }
     }
 
@@ -617,7 +619,7 @@ public class Slave {
     }
 
     public synchronized void sendResponse(AsyncResponse response) {
-        if (response == null) {
+        if (response == null || _sout == null) {
             // handler doesn't return anything or it sends reply on it's own
             // (threaded for example)
             return;

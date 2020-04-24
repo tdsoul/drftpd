@@ -20,6 +20,7 @@ package org.drftpd.slave.diskselection.filter;
 
 import org.drftpd.common.util.Bytes;
 import org.drftpd.common.util.PropertyHelper;
+import org.drftpd.slave.diskselection.DiskSelectionInterface;
 import org.drftpd.slave.vfs.Root;
 
 import java.util.Properties;
@@ -47,7 +48,7 @@ public class MinfreespaceFilter extends DiskFilter {
 
     private final float _multiplier;
 
-    public MinfreespaceFilter(DiskSelectionFilter diskSelection, Properties p, Integer i) {
+    public MinfreespaceFilter(DiskSelectionInterface diskSelection, Properties p, Integer i) {
         super(diskSelection, p, i);
         _minfreespace = Bytes.parseBytes(PropertyHelper.getProperty(p, i + ".minfreespace"));
         _multiplier = DiskFilter.parseMultiplier(p.getProperty(i + ".multiplier", "0"));

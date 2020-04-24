@@ -31,6 +31,7 @@ import org.drftpd.common.slave.TransferIndex;
 import org.drftpd.common.slave.TransferStatus;
 import org.drftpd.slave.Slave;
 import org.drftpd.slave.network.*;
+import org.drftpd.slave.vfs.Root;
 import org.drftpd.slave.vfs.RootCollection;
 import org.drftpd.slave.vfs.RootPathContents;
 
@@ -40,12 +41,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.TreeSet;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Basic operations handling.
@@ -66,9 +69,9 @@ public class BasicHandler extends AbstractHandler {
     private static final Object remergeWaitObj = new Object();
     private static final Object threadMergeWaitObj = new Object();
     private static final Object threadMergeDepthWaitObj = new Object();
-    private HandleRemergeRecursiveThread[] mergeThreads;
     private final AtomicInteger threadMergeCount = new AtomicInteger(0);
     private final ArrayList<String> threadMergeDepth = new ArrayList<>();
+    private HandleRemergeRecursiveThread[] mergeThreads;
     private int remergeDepth = 0;
     private int remergeConcurrentDepth = 0;
 
@@ -214,6 +217,44 @@ public class BasicHandler extends AbstractHandler {
         return new AsyncResponse(ac.getIndex());
     }
 
+    final int chunkSize = 1000;
+    private Collection<List<NodePath>> processDirectory(String rootPath) throws IOException {
+        final AtomicInteger counter2 = new AtomicInteger();
+        long start = System.currentTimeMillis();
+        Path p = Paths.get(rootPath);
+        //try (Stream<Path> stream = Files.walk(p, Integer.MAX_VALUE)) {
+        //    Collection<List<NodePath>> values = stream.parallel()
+        //            .filter(f -> !f.toAbsolutePath().toString().equals(rootPath))
+        //            .map(d -> new NodePath(d, rootPath))
+        //            .collect(Collectors.groupingBy(it -> counter2.getAndIncrement() / chunkSize))
+        //            .forEach((integer, nodePaths) -> {
+        //                NodePath nodePath = nodePaths.get(integer);
+        //                //sendResponse(new AsyncResponseRemerge(nodePath.getPath(), nodePath.get, pathLastModified));
+        //            });
+        //    System.out.println("Listing with java8 stream path done in " + (System.currentTimeMillis() - start) + "ms");
+        //    return values;
+        //}
+        return null;
+    }
+
+    public AsyncResponse handleRemergeNew(AsyncCommandArgument ac) {
+        try {
+            ArrayList<Root> roots = getSlaveObject().getRoots().getRootList();
+            roots.parallelStream().forEach(s -> {
+                try {
+                    processDirectory(s.getPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            return new AsyncResponse(ac.getIndex());
+        } catch (Throwable e) {
+            logger.error("Exception during merging", e);
+            sendResponse(new AsyncResponseSiteBotMessage("Exception during merging"));
+            return new AsyncResponseException(ac.getIndex(), e);
+        }
+    }
+
     public AsyncResponse handleRemerge(AsyncCommandArgument ac) {
         try {
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
@@ -315,7 +356,6 @@ public class BasicHandler extends AbstractHandler {
         synchronized (threadMergeDepth) {
             for (String dir : threadMergeDepth) {
                 if (path.startsWith(dir)) {
-                    dir = path;
                     add = false;
                     break;
                 }
@@ -484,7 +524,7 @@ public class BasicHandler extends AbstractHandler {
         }
         if (!partialRemerge || inodesModified) {
             sendResponse(new AsyncResponseRemerge(path, fileList, pathLastModified));
-            logger.debug("Sending {} to the master", path);
+            // logger.debug("Sending {} to the master", path);
         } else {
             logger.debug("Skipping send of {} as no files changed since last merge", path);
         }
@@ -565,6 +605,7 @@ public class BasicHandler extends AbstractHandler {
     }
 
     private class HandleRemergeRecursiveThread extends Thread {
+        private final Object localWaitObj = new Object();
         private RootCollection rootCollection = null;
         private String path = null;
         private boolean partialRemerge = false;
@@ -572,7 +613,6 @@ public class BasicHandler extends AbstractHandler {
         private long skipAgeCutoff = 0L;
         private volatile boolean available = true;
         private volatile boolean exit = false;
-        private final Object localWaitObj = new Object();
 
         public HandleRemergeRecursiveThread(RootCollection rootCollection, boolean partialRemerge, long skipAgeCutoff, int threadNumber) {
             super("RemergeThread-" + threadNumber);
@@ -625,7 +665,6 @@ public class BasicHandler extends AbstractHandler {
                     inodesModified = true;
                 }
 
-
                 for (String inode : inodes) {
                     String fullPath = path + "/" + inode;
                     PhysicalFile file;
@@ -646,8 +685,7 @@ public class BasicHandler extends AbstractHandler {
                             continue;
                         }
                     } catch (IOException e) {
-                        logger
-                                .warn("You have a symbolic link that couldn't be read at {} -- these are ignored by drftpd", fullPath);
+                        logger.warn("You have a symbolic link that couldn't be read at {} -- these are ignored by drftpd", fullPath);
                         sendResponse(new AsyncResponseSiteBotMessage("You have a symbolic link that couldn't be read at " + fullPath + " -- these are ignored by drftpd"));
                         continue;
                     }
@@ -684,37 +722,6 @@ public class BasicHandler extends AbstractHandler {
                     //TODO check if file is in getMultipleRoots.
                     // if true, diff checksum
                     // if differ, throw MSGSLAVE with info and continue remerge
-                    /**
-                     try {
-                     logger.error("MULTIROOTS going to try to get roots for file " + file.toString());
-                     rootCollection.getMultipleRootsForFile(file.toString());
-                     logger.error("MULTIROOTS done");
-                     List<Root> roots = rootCollection.getRootList();
-                     logger.error("MULTIROOTS root size for file " + file.toString() + " " + roots.size());
-                     Iterator<Root> it = roots.iterator();
-                     long lastCrc=0;
-                     while(it.hasNext()) {
-                     Root root=it.next();
-                     logger.error("MULTIROOTS checking root " + root.getPath());
-                     long crc=0;
-                     try {
-                     crc = getSlaveObject().checkSum(root.getFile().getPath());
-                     logger.error("MULTIROOTS checking file with crc " + crc);
-                     } catch (IOException e) {
-                     logger.error("MULTIROOTS: IOException when checking crc for file in multiple roots");
-                     }
-                     if(crc!=lastCrc) {
-                     logger.error("MULTIROOTS mismatch crc " + crc + ":" + lastCrc);
-                     }
-                     lastCrc=crc;
-                     }
-                     } catch (FileNotFoundException e) {
-                     // This is good, means that file only exists in one root
-                     logger.error("MULTIROOTS FIOLE NOT FOUND " + e);
-                     fileList.add(new LightRemoteInode(file));
-                     continue;
-                     }
-                     */
                     fileList.add(new LightRemoteInode(file));
                 }
 
@@ -723,7 +730,7 @@ public class BasicHandler extends AbstractHandler {
                         waitForDepth(dir);
                     }
                     sendResponse(new AsyncResponseRemerge(path, fileList, pathLastModified));
-                    logger.debug("Sending {} to the master", path);
+                    // logger.debug("Sending {} - {} to the master", fileList.size(), path);
                 } else {
                     logger.debug("Skipping send of {} as no files changed since last merge", path);
                 }

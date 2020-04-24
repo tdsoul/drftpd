@@ -9,7 +9,6 @@ import java.util.Properties;
 
 public class ConfigLoader {
 
-
     public static String configPath(String confDirectory) {
         String configPath = System.getenv("DRFTPD_CONFIG_PATH");
         return configPath != null ? (configPath + "/" + confDirectory) : confDirectory;

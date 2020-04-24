@@ -1,34 +1,17 @@
-/*
- * This file is part of DrFTPD, Distributed FTP Daemon.
- *
- * DrFTPD is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * DrFTPD is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with DrFTPD; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
-package org.drftpd.slave.diskselection.filter;
+package org.drftpd.slave;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.drftpd.common.misc.CaseInsensitiveHashMap;
-import org.drftpd.common.util.ConfigLoader;
-import org.drftpd.slave.Slave;
 import org.drftpd.slave.diskselection.DiskSelectionInterface;
+import org.drftpd.slave.diskselection.filter.DiskFilter;
+import org.drftpd.slave.diskselection.filter.ScoreChart;
 import org.drftpd.slave.vfs.Root;
 import org.drftpd.slave.vfs.RootCollection;
 import org.reflections.Reflections;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,25 +28,36 @@ import java.util.stream.Collectors;
  * @author fr0w
  * @version $Id$
  */
-public class DiskSelectionFilter extends DiskSelectionInterface {
-    private static final Class<?>[] SIG = new Class[]{DiskSelectionFilter.class, Properties.class, Integer.class};
+public class DiskSelection extends DiskSelectionInterface {
+    private static final Class<?>[] SIG = new Class[]{DiskSelectionInterface.class, Properties.class, Integer.class};
     private static final Logger logger = LogManager.getLogger(Slave.class);
-
+    private final RootCollection _rootCollection;
     private ArrayList<DiskFilter> _filters;
     private CaseInsensitiveHashMap<String, Class<? extends DiskFilter>> _filtersMap;
 
-    public DiskSelectionFilter(Slave slave) {
+    public DiskSelection(Slave slave) {
         super(slave);
+        _rootCollection = slave.getRoots();
         readConf();
+    }
+
+    public RootCollection getRootCollection() {
+        return _rootCollection;
     }
 
     /**
      * Load conf/diskselection.conf
      */
     private void readConf() {
-        Properties p = ConfigLoader.loadConfig("diskselection.conf");
-        initFilters();
-        loadFilters(p);
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("diskselection.conf.dist");
+        Properties properties = new Properties();
+        try {
+            properties.load(resourceAsStream);
+            initFilters();
+            loadFilters(properties);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

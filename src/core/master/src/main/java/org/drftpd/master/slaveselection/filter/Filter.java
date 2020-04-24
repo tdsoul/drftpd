@@ -33,9 +33,7 @@ import java.util.Properties;
  * @version $Id$
  */
 public abstract class Filter {
-    public Filter(int i, Properties p) {
-
-    }
+    public Filter(int i, Properties p) { }
 
     public static float parseMultiplier(String string) {
         if (string.equalsIgnoreCase("remove")) {

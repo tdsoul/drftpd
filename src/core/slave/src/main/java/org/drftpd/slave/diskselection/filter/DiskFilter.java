@@ -18,6 +18,7 @@
 
 package org.drftpd.slave.diskselection.filter;
 
+import org.drftpd.slave.diskselection.DiskSelectionInterface;
 import org.drftpd.slave.vfs.Root;
 
 import java.util.ArrayList;
@@ -32,9 +33,9 @@ import java.util.Properties;
  */
 public abstract class DiskFilter {
     protected ArrayList<AssignParser> _assignList;
-    private final DiskSelectionFilter _diskSelection;
+    private final DiskSelectionInterface _diskSelection;
 
-    public DiskFilter(DiskSelectionFilter diskSelection, Properties p, Integer i) {
+    public DiskFilter(DiskSelectionInterface diskSelection, Properties p, Integer i) {
         _diskSelection = diskSelection;
     }
 
@@ -91,7 +92,7 @@ public abstract class DiskFilter {
      */
     public abstract void process(ScoreChart sc, String path);
 
-    public DiskSelectionFilter getDiskSelection() {
+    public DiskSelectionInterface getDiskSelection() {
         return _diskSelection;
     }
 

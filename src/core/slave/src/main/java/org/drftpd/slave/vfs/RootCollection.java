@@ -243,8 +243,7 @@ public class RootCollection {
 
     // Get root which has most of the tree structure that we have.
     public PhysicalFile getFile(String path) throws FileNotFoundException {
-        return new PhysicalFile(getRootForFile(path).getPath() + File.separatorChar
-                + path);
+        return new PhysicalFile(getRootForFile(path).getPath() + File.separatorChar + path);
     }
 
     public List<File> getMultipleFiles(String path) throws FileNotFoundException {

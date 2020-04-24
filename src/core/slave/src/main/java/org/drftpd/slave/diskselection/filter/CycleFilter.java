@@ -18,6 +18,8 @@
 
 package org.drftpd.slave.diskselection.filter;
 
+import org.drftpd.slave.diskselection.DiskSelectionInterface;
+
 import java.util.Properties;
 
 /**
@@ -29,7 +31,7 @@ import java.util.Properties;
  */
 public class CycleFilter extends DiskFilter {
 
-    public CycleFilter(DiskSelectionFilter diskSelection, Properties p, Integer i) {
+    public CycleFilter(DiskSelectionInterface diskSelection, Properties p, Integer i) {
         super(diskSelection, p, i);
     }
 
