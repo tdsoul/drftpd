@@ -118,7 +118,7 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.10.5</version>
+            <version>2.10.6</version>
         </dependency>
         <dependency>
             <groupId>org.mindrot</groupId>
@@ -163,7 +163,7 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.13.1</version>
+            <version>2.13.2</version>
         </dependency>
     </dependencies>
 </project>

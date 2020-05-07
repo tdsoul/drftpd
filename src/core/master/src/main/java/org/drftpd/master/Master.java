@@ -287,7 +287,7 @@ public class Master {
 
     /**
      * Handles the load of the FTP Commands.
-     * Firstly, it checks if <code>conf/ftpcommands.conf</code> exists, if not it halts the daemon.
+     * Firstly, it checks if <code>config/commands/ftp/*.conf</code> exists, if not it halts the daemon.
      * After that it read the file and create a list of the existing commands.
      */
     private void loadCommands() {
@@ -306,7 +306,7 @@ public class Master {
 
     @EventSubscriber
     public void onReloadEvent(ReloadEvent event) {
-        logger.info("Reloading " + cmdConf + ", origin {}", event.getOrigin());
+        logger.info("Reloading " + cmdConf);
         loadCommands();
         _commandManager.initialize(getCommands(), themeDir);
         for (BaseFtpConnection conn : getConnections()) {

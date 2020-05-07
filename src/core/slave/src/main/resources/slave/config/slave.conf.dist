@@ -57,12 +57,12 @@ diskselection=org.drftpd.slave.diskselection.filter.DiskSelectionFilter
 # Blacklist has precedence over whitelist.
 # Both blacklist and whitelist use regular expression pattern.
 # Multiple whitelist/blacklist rules are supported.
-#cipher.whitelist.1=
-cipher.blacklist.1=.*_(NULL|EXPORT|DES|RC4|3DES|MD5|PSK|anon|SCSV)_.*
+cipher.whitelist.1=.*_(POLY1305_SHA256|GCM_SHA384|GCM_SHA256).*
 
 # Enabled protocols
 # If left empty, default set will be used
 protocol.1=TLSv1.2
+protocol.2=TLSv1.3
 
 # Setting this to true will make this slave perform
 # a full remerge when connecting to a master irrespective

@@ -37,7 +37,7 @@ commandmanager=org.drftpd.master.commands.StandardCommandManager
 
 # The name of the SlaveSelection's plugin.
 # Default is: org.drftpd.master.slaveselection.filter
-# More info check conf/slaveselection-*.conf
+# More info check config/slaveselection-*.conf
 slaveselection=org.drftpd.master.slaveselection.filter.SlaveSelectionManager
 
 # There are 2 SectionManagers.
@@ -61,12 +61,12 @@ indexingengine=org.drftpd.master.indexation.LuceneEngine
 # Blacklist has precedence over whitelist.
 # Both blacklist and whitelist use regular expression pattern.
 # Multiple whitelist/blacklist rules are supported.
-#cipher.whitelist.1=
-cipher.blacklist.1=.*_(NULL|EXPORT|DES|RC4|3DES|MD5|PSK|anon|SCSV)_.*
+cipher.whitelist.1=.*_(POLY1305_SHA256|GCM_SHA384|GCM_SHA256).*
 
 # Enabled protocols
 # If left empty, default set will be used
 protocol.1=TLSv1.2
+protocol.2=TLSv1.3
 
 # Slave remerge throttling thresholds, do not modify these
 # unless you know what you are doing

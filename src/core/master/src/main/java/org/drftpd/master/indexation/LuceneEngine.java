@@ -133,7 +133,7 @@ public class LuceneEngine implements IndexEngineInterface {
      * Creates all the needed resources for the Index to work.
      * <ul>
      * <li>IndexSearcher / IndexWriter</li>
-     * <li>Reads <i>conf/plugins/lucene.conf</i> to grab some tweaking
+     * <li>Reads <i>config/indexation.conf</i> to grab some tweaking
      * settings, if this file is not found, a default values are loaded.</li>
      * <li>Adds a Shutdown Hook to save the index while closing DrFTPd</li>
      * <li>Creates the Maintenance thread.(takes cares of updating the search
@@ -219,7 +219,7 @@ public class LuceneEngine implements IndexEngineInterface {
     }
 
     /**
-     * Reads all tweak settings from <i>conf/plugins/lucene.conf</i> if found,
+     * Reads all tweak settings from <i>config/indexation.conf</i> if found,
      * otherwise use default values.
      */
     private void reload() {
@@ -915,46 +915,6 @@ public class LuceneEngine implements IndexEngineInterface {
     protected IndexWriter getWriter() {
         return _iWriter;
     }
-
-	/*
-	@EventSubscriber
-	public synchronized void onLoadPluginEvent(LoadPluginEvent event) {
-		try {
-			List<IndexDataExtensionInterface> loadedDataExtensions =
-				MasterPluginUtils.getLoadedExtensionObjects(this, "org.drftpd.master.vfs.index.lucene", "IndexData", "Class", event);
-			if (!loadedDataExtensions.isEmpty()) {
-				List<IndexDataExtensionInterface> clonedDataExtensions = new ArrayList<>(_dataExtensions);
-				for (IndexDataExtensionInterface dataExtension : loadedDataExtensions) {
-                    logger.debug("Loading lucene index data extension from plugin {}", CommonPluginUtils.getPluginIdForObject(dataExtension));
-					synchronized (INDEX_DOCUMENT) {
-						dataExtension.initializeFields(INDEX_DOCUMENT);
-					}
-					clonedDataExtensions.add(dataExtension);
-				}
-				_dataExtensions = clonedDataExtensions;
-			}
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to load plugins for a loadplugin event for org.drftpd.master.vfs.index.lucene extension point 'IndexData'"
-					+ ", possibly the org.drftpd.master.vfs.index.lucene extension point definition has changed in the plugin.xml",e);
-		}
-		
-		try {
-			List<QueryTermExtensionInterface> loadedQueryExtensions =
-				MasterPluginUtils.getLoadedExtensionObjects(this, "org.drftpd.master.vfs.index.lucene", "QueryTerm", "Class", event);
-			if (!loadedQueryExtensions.isEmpty()) {
-				List<QueryTermExtensionInterface> clonedQueryExtensions = new ArrayList<>(_queryExtensions);
-				for (QueryTermExtensionInterface queryExtension : loadedQueryExtensions) {
-                    logger.debug("Loading lucene query term extension from plugin {}", CommonPluginUtils.getPluginIdForObject(queryExtension));
-					clonedQueryExtensions.add(queryExtension);
-				}
-				_queryExtensions = clonedQueryExtensions;
-			}
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to load plugins for a loadplugin event for org.drftpd.master.vfs.index.lucene extension point 'QueryTerm'"
-					+ ", possibly the org.drftpd.master.vfs.index.lucene extension point definition has changed in the plugin.xml",e);
-		}
-	}
-	 */
 
     /**
      * Custom FieldComparator to get a random result from index

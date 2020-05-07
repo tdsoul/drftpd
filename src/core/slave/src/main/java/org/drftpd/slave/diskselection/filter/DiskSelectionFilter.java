@@ -58,7 +58,7 @@ public class DiskSelectionFilter extends DiskSelectionInterface {
     }
 
     /**
-     * Load conf/diskselection.conf
+     * Load config/diskselection.conf
      */
     private void readConf() {
         Properties p = ConfigLoader.loadConfig("diskselection.conf");
@@ -67,7 +67,7 @@ public class DiskSelectionFilter extends DiskSelectionInterface {
     }
 
     /**
-     * Parses conf/diskselection.conf and load the filters.<br>
+     * Parses config/diskselection.conf and load the filters.<br>
      * Filters classes MUST follow this naming scheme:<br>
      * First letter uppercase, and add the "Filter" in the end.<br>
      * For example: 'minfreespace' filter, class = MinfreespaceFilter.class<br>
